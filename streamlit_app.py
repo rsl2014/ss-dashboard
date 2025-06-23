@@ -1,151 +1,93 @@
 import streamlit as st
 import pandas as pd
-import math
-from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
-)
+# Page configuration
+st.set_page_config(page_title="Student Success AI", layout="wide")
+st.title("Student Success AI Clustering Dashboard")
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
-
+# Load data
 @st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+def load_data(path):
+    return pd.read_csv(path)
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+data_path = "data/ss_data.csv"
+df = load_data(data_path)
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+# Sidebar settings
+st.sidebar.header("Settings")
+n_clusters = st.sidebar.slider("Number of Clusters", 2, 10, 4)
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+# Preprocessing: encode and scale
+df_encoded = pd.get_dummies(df, columns=["Major"], drop_first=True)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(df_encoded)
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
+# Clustering
+kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+df['Cluster'] = kmeans.fit_predict(X_scaled)
 
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
+# Dimensionality reduction for visualization
+pca = PCA(n_components=2)
+components = pca.fit_transform(X_scaled)
+df['PC1'], df['PC2'] = components[:, 0], components[:, 1]
 
-    return gdp_df
+# Map descriptive labels for 4 clusters
+cluster_labels = {
+    0: "Financially Strained but Engaged",
+    1: "Moderate Risk (Low Belonging)",
+    2: "High Performing, Financially At-Risk",
+    3: "Low Advising Use, Stable"
+}
+if n_clusters == 4:
+    df['Cluster_Label'] = df['Cluster'].map(cluster_labels)
+else:
+    df['Cluster_Label'] = df['Cluster'].astype(str)
 
-gdp_df = get_gdp_data()
+# Display cluster counts
+st.sidebar.subheader("Cluster Counts")
+st.sidebar.bar_chart(df['Cluster_Label'].value_counts())
 
-# -----------------------------------------------------------------------------
-# Draw the actual page
+# PCA scatter plot
+st.header("PCA Scatter Plot of Student Clusters")
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.scatterplot(data=df, x='PC1', y='PC2', hue='Cluster_Label', palette='Set2', s=60, ax=ax)
+ax.set_xlabel("PCA Component 1")
+ax.set_ylabel("PCA Component 2")
+ax.set_title("Student Clusters by PCA")
+st.pyplot(fig)
 
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
+# Cluster profile summary
+st.subheader("Cluster Profile Summary")
+cluster_summary = df.groupby('Cluster_Label').mean(numeric_only=True).round(2)
+st.dataframe(cluster_summary)
 
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
+# Dropout simulation
+np.random.seed(42)
+df['DroppedOut'] = np.where(
+    df['Cluster'].isin([0, 1]),
+    np.random.binomial(1, 0.4, len(df)),
+    np.random.binomial(1, 0.1, len(df))
 )
 
-''
-''
+st.subheader("Dropout Simulation")
+dropout_counts = df['DroppedOut'].map({0: 'Stayed', 1: 'DroppedOut'}).value_counts()
+st.bar_chart(dropout_counts)
 
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+# Download clustered data
+st.subheader("Download Clustered Data")
+csv_data = df.to_csv(index=False).encode('utf-8')
+st.download_button(
+    label='Download CSV',
+    data=csv_data,
+    file_name='Clustered_Student_Success_Data.csv',
+    mime='text/csv'
+)
