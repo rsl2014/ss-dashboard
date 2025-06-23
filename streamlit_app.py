@@ -1,8 +1,11 @@
+```python
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import openai
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -22,20 +25,16 @@ st.markdown("---")
 # ─── Data Loading ─────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data(path: str) -> pd.DataFrame:
-    """Load and cache the student dataset"""
     return pd.read_csv(path)
 
 data_path = "data/ss_data.csv"
 df = load_data(data_path)
-
-# Ensure StudentID exists
-df.insert(0, 'StudentID', df.index + 1) if 'StudentID' not in df.columns else None
+if 'StudentID' not in df.columns:
+    df.insert(0, 'StudentID', df.index + 1)
 
 # ─── Sidebar Settings ─────────────────────────────────────────────────────────
 st.sidebar.header("🔧 Configuration")
-n_clusters = st.sidebar.slider(
-    "Number of Clusters", min_value=2, max_value=10, value=4
-)
+n_clusters = st.sidebar.slider("Number of Clusters", 2, 10, 4)
 st.sidebar.markdown("---")
 
 # ─── Preprocessing & Clustering ───────────────────────────────────────────────
@@ -71,18 +70,14 @@ st.sidebar.bar_chart(df['ClusterLabel'].value_counts())
 
 # ─── Main Dashboard ────────────────────────────────────────────────────────────
 col1, col2 = st.columns([1, 2])
-
 with col1:
     st.subheader("Cluster Profile Summary 🧩")
     summary = df.groupby('ClusterLabel').mean(numeric_only=True).round(2)
     st.dataframe(summary.style.set_properties(**{'background-color':'#f0f0f0','border':'1px solid #ddd'}))
-
 with col2:
     st.subheader("Clusters PCA Scatter 🎯")
     fig, ax = plt.subplots(figsize=(8,6))
-    sns.scatterplot(
-        data=df, x='PC1', y='PC2', hue='ClusterLabel', palette='Set2', s=80, alpha=0.8, ax=ax
-    )
+    sns.scatterplot(data=df, x='PC1', y='PC2', hue='ClusterLabel', palette='Set2', s=80, alpha=0.8, ax=ax)
     ax.set_xlabel("PC1")
     ax.set_ylabel("PC2")
     ax.legend(loc='center left', bbox_to_anchor=(1,0.5))
@@ -115,7 +110,6 @@ model = LogisticRegression(max_iter=1000)
 model.fit(X_train,y_train)
 y_pred = model.predict(X_test)
 y_proba = model.predict_proba(X_test)[:,1]
-
 m1,m2,m3,m4 = st.columns(4)
 metrics = {
     'Accuracy': accuracy_score(y_test,y_pred),
@@ -123,26 +117,36 @@ metrics = {
     'Recall': recall_score(y_test,y_pred),
     'F1 Score': f1_score(y_test,y_pred)
 }
-for col,(name,val) in zip([m1,m2,m3,m4], metrics.items()):
-    col.metric(name,f"{val:.2f}")
-
+for col, (name, val) in zip([m1,m2,m3,m4], metrics.items()):
+    col.metric(name, f"{val:.2f}")
 st.markdown("---")
 
-# ─── Probability Distribution ─────────────────────────────────────────────────
-st.subheader("Dropout Probability")
-fig2, ax2 = plt.subplots()
-sns.histplot(y_proba, bins=20, kde=True, ax=ax2)
-ax2.set_xlabel("Probability of Dropout")
-st.pyplot(fig2)
-
-# ─── Top At-Risk Students ─────────────────────────────────────────────────────
-st.subheader("🔍 Top 10 At-Risk Students")
-risk = pd.DataFrame(X_test, index=X_test.index)
-risk['Prob'] = y_proba
-risk['Label'] = y_pred
-eval_df = risk.merge(df[['StudentID']], left_index=True, right_index=True)
-top10 = eval_df.sort_values('Prob',ascending=False).head(10)
-st.table(top10[['StudentID','Prob','Label']].rename(columns={'Prob':'Probability','Label':'Predicted'}))
+# ─── NLP Chatbot ──────────────────────────────────────────────────────────────
+st.subheader("💬 Advisor NLP Chatbot")
+# Set up OpenAI
+api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+if not api_key:
+    st.warning("🔑 Please set your OPENAI_API_KEY in streamlit secrets or environment variables to enable the chatbot.")
+else:
+    openai.api_key = api_key
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    # User input
+    user_msg = st.chat_input("Ask about student clusters or retention strategies...")
+    if user_msg:
+        st.session_state.chat_history.append(("user", user_msg))
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": m, "content": c} for m, c in st.session_state.chat_history]
+        )
+        bot_msg = response.choices[0].message.content
+        st.session_state.chat_history.append(("assistant", bot_msg))
+    # Display chat history
+    for role, msg in st.session_state.chat_history:
+        if role == "user":
+            st.chat_message("user").write(msg)
+        else:
+            st.chat_message("assistant").write(msg)
 
 st.markdown("---")
 
@@ -150,3 +154,4 @@ st.markdown("---")
 st.subheader("📥 Download Data")
 csv = df.to_csv(index=False).encode('utf-8')
 st.download_button("Download CSV", csv, file_name='clustered_students.csv', mime='text/csv')
+```
