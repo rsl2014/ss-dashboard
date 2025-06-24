@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 # ─── Page Configuration ──────────────────────────────────────────────────────
 st.set_page_config(
@@ -118,34 +118,32 @@ metrics = {
 }
 for col, (name, val) in zip([m1,m2,m3,m4], metrics.items()):
     col.metric(name, f"{val:.2f}")
+
 st.markdown("---")
 
-# ─── NLP Chatbot ──────────────────────────────────────────────────────────────
+# ─── Advisor NLP Chatbot ──────────────────────────────────────────────────────
 st.subheader("💬 Advisor NLP Chatbot")
-# Set up OpenAI
 api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 if not api_key:
-    st.warning("🔑 Please set your OPENAI_API_KEY in streamlit secrets or environment variables to enable the chatbot.")
+    st.warning("🔑 Please set your OPENAI_API_KEY in Streamlit secrets or environment to enable the chatbot.")
 else:
     openai.api_key = api_key
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-    # User input
-    user_msg = st.chat_input("Ask about student clusters or retention strategies...")
-    if user_msg:
-        st.session_state.chat_history.append(("user", user_msg))
+    if "messages" not in st.session_state:
+        st.session_state.messages = [{"role":"system","content":"You are an AI assistant for academic advisors."}]
+    user_input = st.text_input("Ask about student clusters or retention strategies:")
+    if user_input:
+        st.session_state.messages.append({"role":"user","content":user_input})
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": m, "content": c} for m, c in st.session_state.chat_history]
+            messages=st.session_state.messages
         )
-        bot_msg = response.choices[0].message.content
-        st.session_state.chat_history.append(("assistant", bot_msg))
-    # Display chat history
-    for role, msg in st.session_state.chat_history:
-        if role == "user":
-            st.chat_message("user").write(msg)
+        assistant_msg = response.choices[0].message.content
+        st.session_state.messages.append({"role":"assistant","content":assistant_msg})
+    for msg in st.session_state.messages[1:]:
+        if msg["role"] == "user":
+            st.markdown(f"**You:** {msg['content']}")
         else:
-            st.chat_message("assistant").write(msg)
+            st.markdown(f"**AdvisorBot:** {msg['content']}")
 
 st.markdown("---")
 
@@ -153,4 +151,5 @@ st.markdown("---")
 st.subheader("📥 Download Data")
 csv = df.to_csv(index=False).encode('utf-8')
 st.download_button("Download CSV", csv, file_name='clustered_students.csv', mime='text/csv')
+```
 
