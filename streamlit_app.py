@@ -11,6 +11,30 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
+# ─── Custom CSS Styles ─────────────────────────────────────────────────────────
+css = '''
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+}
+[data-testid="stSidebar"] {
+    background-color: #f1f5f9;
+    border-right: 1px solid #e2e8f0;
+}
+.stDataFrame th, .stDataFrame td {
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid #e2e8f0;
+}
+.stDataFrame th {
+    background-color: #f8fafc !important;
+    font-weight: 600 !important;
+}
+.stDataFrame tr:hover td {
+    background-color: #f1f5f9 !important;
+}
+''' 
+st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
+
 # ─── Page Configuration ──────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Student Success AI Dashboard",
@@ -136,3 +160,4 @@ st.markdown("---")
 st.subheader("📥 Download Data")
 csv = df.to_csv(index=False).encode('utf-8')
 st.download_button("Download CSV", csv, file_name='clustered_students.csv', mime='text/csv')
+
