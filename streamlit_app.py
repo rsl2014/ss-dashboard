@@ -155,9 +155,11 @@ if api_key:
 else:
     st.warning("🔑 No OpenAI API key provided. Please enter it above to enable the chatbot.")
 
-st.markdown("---")("---")("---")
+st.markdown("---")
 
 # ─── Data Download ───────────────────────────────────────────────────────────
 st.subheader("📥 Download Data")
 csv = df.to_csv(index=False).encode('utf-8')
 st.download_button("Download CSV", csv, file_name='clustered_students.csv', mime='text/csv')
+
+
