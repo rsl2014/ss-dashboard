@@ -148,40 +148,24 @@ for col, metric, val in zip(metric_cols, metrics, values):
 
 st.markdown("---")
 
-# ─── Lightweight Advisor Chatbot ───────────────────────────────────────────────
-st.subheader("💬 Advisor Chatbot")
+# ─── Advisor FAQ Section ───────────────────────────────────────────────
+st.subheader("💬 Advisor FAQ")
+faq_options = [
+    "What strategies can help at-risk students?",
+    "How do I interpret cluster labels?",
+    "What interventions support first-generation students?",
+    "How can I use this dashboard effectively?"
+]
+selected_faq = st.selectbox("Choose a question to see the answer:", faq_options)
 
-# Predefined Q&A dictionary
-chat_responses = {
-    "what is a high achiever?": "A high achiever typically has a strong GPA, high engagement scores, and is on track academically.",
-    "how can i help at-risk students?": "At-risk students benefit from academic tutoring, regular advising appointments, and financial counseling if needed.",
-    "what resources help first-generation students?": "First-gen students thrive with dedicated mentoring, specialized workshops, and academic advising tailored to their unique needs.",
-    "recommendations for financially strained students": "Connect these students with financial aid counseling, budgeting workshops, and emergency grant options.",
-    "how to increase campus engagement?": "Encourage participation in clubs, campus events, peer mentorship programs, and community service projects."
+faq_answers = {
+    faq_options[0]: "Consider proactive advising, academic tutoring, peer mentoring, and financial aid counseling.",
+    faq_options[1]: "Clusters group students by similar characteristics such as academic performance, financial needs, and campus engagement.",
+    faq_options[2]: "Support first-gen students through dedicated advising sessions, mentorship programs, and resources tailored to their unique challenges.",
+    faq_options[3]: "Use filters and metrics to identify student groups needing interventions and monitor the effectiveness of strategies over time."
 }
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-user_input = st.text_input("Ask a question about student success:")
-
-if user_input:
-    user_question = user_input.lower().strip()
-    response = chat_responses.get(
-        user_question, 
-        "I'm sorry, I don't have information on that topic yet. Try asking about high achievers, at-risk students, first-generation support, financial aid, or campus engagement."
-    )
-    st.session_state.chat_history.append(("You", user_input))
-    st.session_state.chat_history.append(("AdvisorBot", response))
-
-# Display chat history
-for sender, message in st.session_state.chat_history:
-    if sender == "You":
-        st.markdown(f"**You:** {message}")
-    else:
-        st.markdown(f"**AdvisorBot:** {message}")
-
-
+st.info(faq_answers[selected_faq])
 # ─── Data Download ───────────────────────────────────────────────────────────
 st.subheader("📥 Download Data")
 csv = df.to_csv(index=False).encode('utf-8')
