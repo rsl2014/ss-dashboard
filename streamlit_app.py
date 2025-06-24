@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import openai
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -86,15 +85,22 @@ st.markdown("---")
 
 # ─── Interactive Table ────────────────────────────────────────────────────────
 st.subheader("📌 Student Explorer")
-with st.expander("Filter Options"):
+with st.expander("Filter & Search Options"):
     sel = st.multiselect("Clusters", options=df['ClusterLabel'].unique())
     gmin, gmax = st.slider("GPA Range", 0.0, 4.0, (0.0, 4.0), 0.1)
+    search_id = st.text_input("Search by Student ID (exact match):")
     table = df.copy()
     if sel:
         table = table[table['ClusterLabel'].isin(sel)]
     table = table[(table['GPA']>=gmin)&(table['GPA']<=gmax)]
-    st.dataframe(table[['StudentID','ClusterLabel','GPA','CreditsCompleted','CampusEngagementScore']].rename(columns={'ClusterLabel':'Cluster'}))
-
+    if search_id:
+        try:
+            sid = int(search_id)
+            table = table[table['StudentID'] == sid]
+        except ValueError:
+            st.error("Please enter a valid integer Student ID.")
+    display_cols = ['StudentID','ClusterLabel','GPA','CreditsCompleted','CampusEngagementScore']
+    st.dataframe(table[display_cols].rename(columns={'ClusterLabel':'Cluster'}).reset_index(drop=True))
 st.markdown("---")
 
 # ─── Dropout Risk Predictor ───────────────────────────────────────────────────
@@ -104,62 +110,29 @@ model_df = df_enc.copy()
 model_df['DropoutFlag'] = df['DropoutFlag']
 y = model_df['DropoutFlag']
 X = model_df.drop(columns=['DropoutFlag'])
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.3,stratify=y,random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
 model = LogisticRegression(max_iter=1000)
-model.fit(X_train,y_train)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 y_proba = model.predict_proba(X_test)[:,1]
-m1,m2,m3,m4 = st.columns(4)
+m1, m2, m3, m4 = st.columns(4)
 metrics = {
-    'Accuracy': accuracy_score(y_test,y_pred),
-    'Precision': precision_score(y_test,y_pred),
-    'Recall': recall_score(y_test,y_pred),
-    'F1 Score': f1_score(y_test,y_pred)
+    'Accuracy': accuracy_score(y_test, y_pred),
+    'Precision': precision_score(y_test, y_pred),
+    'Recall': recall_score(y_test, y_pred),
+    'F1 Score': f1_score(y_test, y_pred)
 }
-for col, (name, val) in zip([m1,m2,m3,m4], metrics.items()):
+for col, (name, val) in zip([m1, m2, m3, m4], metrics.items()):
     col.metric(name, f"{val:.2f}")
 
 st.markdown("---")
 
-# ─── Advisor NLP Chatbot ──────────────────────────────────────────────────────
-st.subheader("💬 Advisor NLP Chatbot")
-# Attempt to load API key securely
-api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
-
-# If no key found, allow manual entry (not recommended for production)
-if not api_key:
-    api_key = st.text_input(
-        "Enter your OpenAI API key (visible only in this session):",
-        type="password"
-    )
-
-# Once we have an API key, initialize OpenAI
-if api_key:
-    openai.api_key = api_key
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = [{"role":"system","content":"You are an AI assistant for academic advisors."}]
-    user_prompt = st.chat_input("Ask about student clusters or retention strategies:")
-    if user_prompt:
-        st.session_state.chat_history.append({"role":"user","content":user_prompt})
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=st.session_state.chat_history
-        )
-        assistant_msg = response.choices[0].message.content
-        st.session_state.chat_history.append({"role":"assistant","content":assistant_msg})
-    for msg in st.session_state.chat_history:
-        if msg["role"] == "user":
-            st.chat_message("user").write(msg["content"])
-        else:
-            st.chat_message("assistant").write(msg["content"])
-else:
-    st.warning("🔑 No OpenAI API key provided. Please enter it above to enable the chatbot.")
-
+# ─── Advisor Chatbot Placeholder ───────────────────────────────────────────────
+st.subheader("💬 Advisor Chatbot (Coming Soon)")
+st.info("This feature is under development and will be available in a future release.")
 st.markdown("---")
 
 # ─── Data Download ───────────────────────────────────────────────────────────
 st.subheader("📥 Download Data")
 csv = df.to_csv(index=False).encode('utf-8')
 st.download_button("Download CSV", csv, file_name='clustered_students.csv', mime='text/csv')
-
-
