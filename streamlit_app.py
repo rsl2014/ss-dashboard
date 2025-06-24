@@ -123,7 +123,13 @@ st.markdown("---")
 
 # ─── Advisor NLP Chatbot ──────────────────────────────────────────────────────
 st.subheader("💬 Advisor NLP Chatbot")
+# Retrieve API key from Streamlit secrets or environment
 api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+
+# Debug: show where the key is coming from
+st.text(f"secrets OPENAI_API_KEY: {bool(st.secrets.get('OPENAI_API_KEY'))}")
+st.text(f"env    OPENAI_API_KEY: {bool(os.getenv('OPENAI_API_KEY'))}")
+
 if not api_key:
     st.warning("🔑 Please set your OPENAI_API_KEY in Streamlit secrets or environment to enable the chatbot.")
 else:
@@ -148,10 +154,9 @@ else:
         elif msg["role"] == "assistant":
             st.chat_message("assistant").write(msg["content"])
 
-st.markdown("---")
+st.markdown("---")("---")
 
 # ─── Data Download ───────────────────────────────────────────────────────────
 st.subheader("📥 Download Data")
 csv = df.to_csv(index=False).encode('utf-8')
 st.download_button("Download CSV", csv, file_name='clustered_students.csv', mime='text/csv')
-
