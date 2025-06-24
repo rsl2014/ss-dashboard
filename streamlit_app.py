@@ -123,21 +123,21 @@ st.markdown("---")
 
 # ─── Advisor NLP Chatbot ──────────────────────────────────────────────────────
 st.subheader("💬 Advisor NLP Chatbot")
-# Retrieve API key from Streamlit secrets or environment
+# Attempt to load API key securely
 api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
-# Debug: show where the key is coming from
-st.text(f"secrets OPENAI_API_KEY: {bool(st.secrets.get('OPENAI_API_KEY'))}")
-st.text(f"env    OPENAI_API_KEY: {bool(os.getenv('OPENAI_API_KEY'))}")
-
+# If no key found, allow manual entry (not recommended for production)
 if not api_key:
-    st.warning("🔑 Please set your OPENAI_API_KEY in Streamlit secrets or environment to enable the chatbot.")
-else:
+    api_key = st.text_input(
+        "Enter your OpenAI API key (visible only in this session):",
+        type="password"
+    )
+
+# Once we have an API key, initialize OpenAI
+if api_key:
     openai.api_key = api_key
-    # Initialize chat history
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = [{"role":"system","content":"You are an AI assistant for academic advisors."}]
-    # Receive user input
     user_prompt = st.chat_input("Ask about student clusters or retention strategies:")
     if user_prompt:
         st.session_state.chat_history.append({"role":"user","content":user_prompt})
@@ -147,14 +147,15 @@ else:
         )
         assistant_msg = response.choices[0].message.content
         st.session_state.chat_history.append({"role":"assistant","content":assistant_msg})
-    # Display chat messages
     for msg in st.session_state.chat_history:
         if msg["role"] == "user":
             st.chat_message("user").write(msg["content"])
-        elif msg["role"] == "assistant":
+        else:
             st.chat_message("assistant").write(msg["content"])
+else:
+    st.warning("🔑 No OpenAI API key provided. Please enter it above to enable the chatbot.")
 
-st.markdown("---")("---")
+st.markdown("---")("---")("---")
 
 # ─── Data Download ───────────────────────────────────────────────────────────
 st.subheader("📥 Download Data")
