@@ -11,77 +11,37 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-# ─── Custom CSS Styles ─────────────────────────────────────────────────────────
-css = '''
-/* Global Styles */
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-    background-color: #f8fafc;
-    color: #333;
-}
-
-/* Sidebar Enhancements */
-[data-testid="stSidebar"] {
-    background-color: #f1f5f9;
-    border-right: 1px solid #e2e8f0;
-}
-
-/* Improved Tables */
-.stDataFrame {
-    border-radius: 8px;
-    overflow: hidden;
-}
-.stDataFrame th {
-    background-color: #e2e8f0 !important;
-    font-weight: 600 !important;
-    color: #334155 !important;
-}
-.stDataFrame td {
-    padding: 12px !important;
-}
-.stDataFrame tr:nth-child(odd) td {
-    background-color: #fafafa !important;
-}
-.stDataFrame tr:hover td {
-    background-color: #e2e8f0 !important;
-}
-
-/* Metrics Cards */
-div[data-testid="metric-container"] {
-    background-color: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-/* Expander Enhancement */
-.stExpander {
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-}
-'''
-st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
-# ─── Metrics Cards ───────────────────────────────────────────────────
-st.subheader("📈 Dropout Risk & Metrics")
-metric_cols = st.columns(4)
-
-metric_labels = ['Accuracy', 'Precision', 'Recall', 'F1 Score']
-metric_values = [accuracy_score(y_test, y_pred),
-                 precision_score(y_test, y_pred),
-                 recall_score(y_test, y_pred),
-                 f1_score(y_test, y_pred)]
-
-for col, label, val in zip(metric_cols, metric_labels, metric_values):
-    with col.container(border=True):
-        st.metric(label, f"{val:.2%}")
-
-
 # ─── Page Configuration ──────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Student Success AI Dashboard",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ─── Custom CSS Styles ─────────────────────────────────────────────────────────
+css = '''
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+}
+[data-testid="stSidebar"] {
+    background-color: #f1f5f9;
+    border-right: 1px solid #e2e8f0;
+}
+.stDataFrame th, .stDataFrame td {
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid #e2e8f0;
+}
+.stDataFrame th {
+    background-color: #f8fafc !important;
+    font-weight: 600 !important;
+}
+.stDataFrame tr:hover td {
+    background-color: #f1f5f9 !important;
+}
+'''
+st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
+
 st.title("🎓 Student Success AI Dashboard")
 st.markdown("---")
 
@@ -139,42 +99,34 @@ with col1:
     st.dataframe(summary.style.set_properties(**{'background-color':'#f0f0f0','border':'1px solid #ddd'}))
 with col2:
     st.subheader("Clusters PCA Scatter 🎯")
-fig, ax = plt.subplots(figsize=(9, 7))
-sns.scatterplot(
-    data=df, x='PC1', y='PC2',
-    hue='ClusterLabel', palette='Set2', s=100, alpha=0.9, ax=ax
-)
-ax.set_xlabel("Principal Component 1 (PC1)", fontsize=12)
-ax.set_ylabel("Principal Component 2 (PC2)", fontsize=12)
-ax.set_title("Student Clusters Visualization", fontsize=14, fontweight='bold')
-ax.legend(title='Cluster', loc='best', fontsize='small', title_fontsize='medium', bbox_to_anchor=(1,1))
-st.pyplot(fig)
+    fig, ax = plt.subplots(figsize=(8,6))
+    sns.scatterplot(data=df, x='PC1', y='PC2', hue='ClusterLabel', palette='Set2', s=80, alpha=0.8, ax=ax)
+    ax.set_xlabel("PC1")
+    ax.set_ylabel("PC2")
+    ax.legend(loc='center left', bbox_to_anchor=(1,0.5))
+    st.pyplot(fig)
 
 st.markdown("---")
 
 # ─── Interactive Student Explorer ────────────────────────────────────
 st.subheader("📌 Student Explorer")
-with st.expander("🔍 Filter & Search"):
-    col1, col2, col3 = st.columns([2, 2, 2])
-    with col1:
-        selected_clusters = st.multiselect(
-            "Select Clusters:", df['ClusterLabel'].unique(), default=df['ClusterLabel'].unique())
-    with col2:
-        gpa_range = st.slider("GPA Range:", 0.0, 4.0, (2.0, 4.0), step=0.1)
-    with col3:
-        search_id = st.text_input("Search Student ID:")
-
-filtered_df = df[df['ClusterLabel'].isin(selected_clusters)]
-filtered_df = filtered_df[(filtered_df['GPA'] >= gpa_range[0]) & (filtered_df['GPA'] <= gpa_range[1])]
-if search_id:
-    filtered_df = filtered_df[filtered_df['StudentID'].astype(str).str.contains(search_id)]
-
-st.dataframe(
-    filtered_df[['StudentID', 'ClusterLabel', 'GPA', 'CreditsCompleted', 'CampusEngagementScore']]
-    .rename(columns={'ClusterLabel': 'Cluster'})
-    .reset_index(drop=True)
-)
-
+with st.expander("🔍 Filter & Search Options"):
+    sel = st.multiselect("Clusters", options=df['ClusterLabel'].unique())
+    gmin, gmax = st.slider("GPA Range", 0.0, 4.0, (0.0, 4.0), 0.1)
+    search_id = st.text_input("Search by Student ID (exact match):")
+    table = df.copy()
+    if sel:
+        table = table[table['ClusterLabel'].isin(sel)]
+    table = table[(table['GPA']>=gmin)&(table['GPA']<=gmax)]
+    if search_id:
+        try:
+            sid = int(search_id)
+            table = table[table['StudentID'] == sid]
+        except ValueError:
+            st.error("Please enter a valid integer Student ID.")
+    display_cols = ['StudentID','ClusterLabel','GPA','CreditsCompleted','CampusEngagementScore']
+    st.dataframe(table[display_cols].rename(columns={'ClusterLabel':'Cluster'}).reset_index(drop=True))
+st.markdown("---")
 
 # ─── Dropout Risk Predictor ───────────────────────────────────────────────────
 st.subheader("📈 Dropout Risk & Metrics")
@@ -187,32 +139,20 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratif
 model = LogisticRegression(max_iter=1000)
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
-y_proba = model.predict_proba(X_test)[:,1]
-m1, m2, m3, m4 = st.columns(4)
-metrics = {
-    'Accuracy': accuracy_score(y_test, y_pred),
-    'Precision': precision_score(y_test, y_pred),
-    'Recall': recall_score(y_test, y_pred),
-    'F1 Score': f1_score(y_test, y_pred)
-}
-for col, (name, val) in zip([m1, m2, m3, m4], metrics.items()):
-    col.metric(name, f"{val:.2f}")
+
+metric_cols = st.columns(4)
+metrics = ['Accuracy', 'Precision', 'Recall', 'F1 Score']
+values = [accuracy_score(y_test, y_pred), precision_score(y_test, y_pred), recall_score(y_test, y_pred), f1_score(y_test, y_pred)]
+for col, metric, val in zip(metric_cols, metrics, values):
+    col.metric(metric, f"{val:.2%}")
 
 st.markdown("---")
 
 # ─── Advisor Chatbot Placeholder ───────────────────────────────────────────────
 st.subheader("💬 Advisor Chatbot (Coming Soon)")
 st.info("This feature is under development and will be available in a future release.")
-st.markdown("---")
 
 # ─── Data Download ───────────────────────────────────────────────────────────
-st.markdown("### 📥 Download Clustered Data")
-st.download_button(
-    "⬇️ Download CSV",
-    data=df.to_csv(index=False).encode('utf-8'),
-    file_name="clustered_students.csv",
-    mime="text/csv",
-    use_container_width=True,
-)
-
-
+st.subheader("📥 Download Data")
+csv = df.to_csv(index=False).encode('utf-8')
+st.download_button("Download CSV", csv, file_name='clustered_students.csv', mime='text/csv')
