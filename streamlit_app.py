@@ -148,24 +148,59 @@ for col, metric, val in zip(metric_cols, metrics, values):
 
 st.markdown("---")
 
-# ─── Advisor FAQ Section ───────────────────────────────────────────────
+# ─── Advisor FAQ (Dropdown-style) ────────────────────────────────────────────
 st.subheader("💬 Advisor FAQ")
+
 faq_options = [
-    "What strategies can help at-risk students?",
-    "How do I interpret cluster labels?",
-    "What interventions support first-generation students?",
-    "How can I use this dashboard effectively?"
+    "What is a high achiever?",
+    "How can I help at-risk students?",
+    "What resources help first-generation students?",
+    "Recommendations for financially strained students",
+    "How to increase campus engagement?",
+    "What indicates a student may drop out?",
+    "How do I support Pell-eligible students?",
+    "Benefits of peer mentoring programs",
+    "Strategies to retain moderate performers",
+    "Importance of sense of belonging",
+    "How to handle students with high withdrawals",
+    "How can advisors identify first-gen students?",
+    "Effective communication strategies with students",
+    "Best practices for advising sessions",
+    "What interventions help STEM-focused students?",
+    "Why track campus engagement scores?",
+    "Role of financial counseling in student retention",
+    "Tips for increasing academic motivation",
+    "How to address low social integration",
+    "Indicators of financial stress in students"
 ]
+
 selected_faq = st.selectbox("Choose a question to see the answer:", faq_options)
 
 faq_answers = {
-    faq_options[0]: "Consider proactive advising, academic tutoring, peer mentoring, and financial aid counseling.",
-    faq_options[1]: "Clusters group students by similar characteristics such as academic performance, financial needs, and campus engagement.",
-    faq_options[2]: "Support first-gen students through dedicated advising sessions, mentorship programs, and resources tailored to their unique challenges.",
-    faq_options[3]: "Use filters and metrics to identify student groups needing interventions and monitor the effectiveness of strategies over time."
+    faq_options[0]:  "A high achiever typically has a strong GPA, high engagement scores, and is on track academically.",
+    faq_options[1]:  "At-risk students benefit from academic tutoring, regular advising appointments, and financial counseling if needed.",
+    faq_options[2]:  "First-gen students thrive with dedicated mentoring, specialized workshops, and academic advising tailored to their unique needs.",
+    faq_options[3]:  "Connect these students with financial aid counseling, budgeting workshops, and emergency grant options.",
+    faq_options[4]:  "Encourage participation in clubs, campus events, peer mentorship programs, and community service projects.",
+    faq_options[5]:  "Key indicators include consistently low GPA, high number of course withdrawals, financial holds, and low campus engagement.",
+    faq_options[6]:  "Provide targeted financial literacy workshops, ensure timely financial aid support, and encourage participation in engagement activities.",
+    faq_options[7]:  "Peer mentoring can improve students' sense of belonging, provide academic support, and increase overall campus engagement.",
+    faq_options[8]:  "Moderate performers benefit from proactive academic advising, goal-setting sessions, and encouragement to participate in high-impact practices like internships or research.",
+    faq_options[9]:  "A strong sense of belonging is crucial for student retention, academic performance, and overall student success.",
+    faq_options[10]: "Students with multiple withdrawals may need academic counseling, tutoring support, and clear discussions about managing course loads.",
+    faq_options[11]: "First-gen students can typically be identified through admissions data, student intake forms, or self-reported surveys.",
+    faq_options[12]: "Personalized messaging, regular check-ins, and clear communication about resources and opportunities enhance student engagement.",
+    faq_options[13]: "Effective advising includes active listening, setting clear goals, creating follow-up action plans, and documenting each interaction.",
+    faq_options[14]: "STEM-focused students thrive with specialized tutoring, research opportunities, internship placements, and participation in academic clubs.",
+    faq_options[15]: "Campus engagement scores help advisors identify students who might be socially isolated or at risk of dropping out, allowing targeted interventions.",
+    faq_options[16]: "Financial counseling provides students with essential budgeting skills, awareness of financial aid resources, and support managing financial stress.",
+    faq_options[17]: "Academic motivation can be increased by helping students set achievable goals, celebrating small wins, and connecting coursework to career aspirations.",
+    faq_options[18]: "Encourage students to join clubs, attend campus events, utilize peer mentoring programs, and participate in orientation activities to build stronger social connections.",
+    faq_options[19]: "Indicators include repeated financial holds, late tuition payments, frequent visits to financial aid offices, and expressing anxiety about finances."
 }
 
 st.info(faq_answers[selected_faq])
+
 # ─── Data Download ───────────────────────────────────────────────────────────
 st.subheader("📥 Download Data")
 csv = df.to_csv(index=False).encode('utf-8')
