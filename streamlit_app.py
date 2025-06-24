@@ -148,9 +148,39 @@ for col, metric, val in zip(metric_cols, metrics, values):
 
 st.markdown("---")
 
-# ─── Advisor Chatbot Placeholder ───────────────────────────────────────────────
-st.subheader("💬 Advisor Chatbot (Coming Soon)")
-st.info("This feature is under development and will be available in a future release.")
+# ─── Lightweight Advisor Chatbot ───────────────────────────────────────────────
+st.subheader("💬 Advisor Chatbot")
+
+# Predefined Q&A dictionary
+chat_responses = {
+    "what is a high achiever?": "A high achiever typically has a strong GPA, high engagement scores, and is on track academically.",
+    "how can i help at-risk students?": "At-risk students benefit from academic tutoring, regular advising appointments, and financial counseling if needed.",
+    "what resources help first-generation students?": "First-gen students thrive with dedicated mentoring, specialized workshops, and academic advising tailored to their unique needs.",
+    "recommendations for financially strained students": "Connect these students with financial aid counseling, budgeting workshops, and emergency grant options.",
+    "how to increase campus engagement?": "Encourage participation in clubs, campus events, peer mentorship programs, and community service projects."
+}
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+user_input = st.text_input("Ask a question about student success:")
+
+if user_input:
+    user_question = user_input.lower().strip()
+    response = chat_responses.get(
+        user_question, 
+        "I'm sorry, I don't have information on that topic yet. Try asking about high achievers, at-risk students, first-generation support, financial aid, or campus engagement."
+    )
+    st.session_state.chat_history.append(("You", user_input))
+    st.session_state.chat_history.append(("AdvisorBot", response))
+
+# Display chat history
+for sender, message in st.session_state.chat_history:
+    if sender == "You":
+        st.markdown(f"**You:** {message}")
+    else:
+        st.markdown(f"**AdvisorBot:** {message}")
+
 
 # ─── Data Download ───────────────────────────────────────────────────────────
 st.subheader("📥 Download Data")
