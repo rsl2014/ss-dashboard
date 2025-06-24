@@ -139,7 +139,7 @@ with col1:
     st.dataframe(summary.style.set_properties(**{'background-color':'#f0f0f0','border':'1px solid #ddd'}))
 with col2:
     st.subheader("Clusters PCA Scatter 🎯")
-   fig, ax = plt.subplots(figsize=(9, 7))
+fig, ax = plt.subplots(figsize=(9, 7))
 sns.scatterplot(
     data=df, x='PC1', y='PC2',
     hue='ClusterLabel', palette='Set2', s=100, alpha=0.9, ax=ax
